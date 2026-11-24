@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="hu"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Troll Foci Aréna</title>
+<style>
+:root{--bg:#eef3ec;--fg:#14281c;--card:#fff;--line:#cfdccf;--acc:#1f8a4c;--onacc:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1a13;--fg:#e6f2ea;--card:#17261d;--line:#2a4034;--acc:#3fcf7a;--onacc:#06210f}}
+:root[data-theme="dark"]{--bg:#0e1a13;--fg:#e6f2ea;--card:#17261d;--line:#2a4034;--acc:#3fcf7a;--onacc:#06210f}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--fg);font:16px/1.45 "Trebuchet MS","Segoe UI",system-ui,sans-serif;display:flex;justify-content:center}
+.wrap{width:100%;max-width:1200px;padding:16px}
+h1{margin:.1em 0 .1em;font-size:2.4rem;letter-spacing:.5px}
+h2{font-size:1.05rem;margin:1.2em 0 .5em}
+p{margin:.2em 0}
+.grid{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:flex;align-items:center;gap:8px;padding:8px 14px;border:2px solid var(--line);background:var(--card);color:var(--fg);border-radius:999px;font:inherit;cursor:pointer}
+.chip:focus-visible,.btn:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.chip.on{border-color:var(--acc);box-shadow:inset 0 0 0 2px var(--acc);font-weight:700}
+.chip i{width:18px;height:18px;border-radius:50%;border:3px solid;display:inline-block;box-sizing:border-box}
+.btn{background:var(--acc);color:var(--onacc);border:0;border-radius:12px;padding:12px 22px;font:inherit;font-weight:700;font-size:1.1rem;cursor:pointer;margin-top:22px}
+.btn.alt{background:transparent;color:inherit;border:2px solid currentColor;margin-left:8px}
+.hide{display:none!important}
+#hud{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--card);border:2px solid var(--line);border-radius:12px;padding:6px 14px;margin-bottom:8px;font-weight:700}
+#hud span{display:flex;align-items:center;gap:6px;flex:1}
+#hud span:nth-of-type(2){justify-content:flex-end}
+#sc{font-size:1.5rem}
+#tm{min-width:48px;text-align:right;font-style:normal}
+.stage{position:relative}
+canvas{width:100%;height:auto;display:block;border-radius:12px;touch-action:none}
+#end{position:absolute;inset:0;box-sizing:border-box;padding-bottom:14px;border-radius:12px;background:transparent;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;text-align:center}
+#end h1{font-size:1.8rem;margin:0;text-shadow:0 2px 8px #000}
+.help{font-size:.9rem;opacity:.8;margin-top:8px}
+#intro{position:fixed;inset:0;z-index:50;background:#1c7a3c repeating-linear-gradient(90deg,rgba(255,255,255,.07) 0 90px,transparent 90px 180px);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;cursor:pointer;transition:opacity .6s;overflow:hidden}
+#intro.out{opacity:0;pointer-events:none}
+#il{display:flex;flex-wrap:wrap;justify-content:center;gap:0 .3em;max-width:92vw;font:900 clamp(2.8rem,11vw,7rem)/1.05 "Trebuchet MS","Segoe UI",system-ui,sans-serif;text-shadow:0 6px 0 rgba(0,0,0,.28);animation:wob 1.6s 1.5s ease-in-out infinite}
+#il span{display:inline-block;opacity:0;transform:translateY(-110vh) rotate(-35deg);animation:drop .8s cubic-bezier(.3,1.5,.5,1) forwards}
+#ib{position:absolute;bottom:14%;left:-12%;font-size:4rem;animation:roll 2.6s .8s ease-in forwards}
+#is{position:absolute;bottom:5%;margin:0;font-size:.9rem;opacity:.7}
+@keyframes drop{to{opacity:1;transform:none}}
+@keyframes roll{to{left:112%;transform:rotate(1440deg)}}
+@keyframes wob{0%,100%{transform:rotate(-1.5deg)}50%{transform:rotate(1.5deg)}}
+@media (prefers-reduced-motion:reduce){#il,#il span,#ib{animation:none!important;opacity:1;transform:none}#ib{display:none}}
+#touch{display:flex;justify-content:space-between;align-items:center;padding:14px 8px;touch-action:none}
+#pad{width:140px;height:140px;border-radius:50%;background:var(--card);border:2px solid var(--line);position:relative;touch-action:none}
+#knob{position:absolute;left:50px;top:50px;width:40px;height:40px;border-radius:50%;background:var(--acc);pointer-events:none}
+#sw,#ps{width:80px;height:80px;border-radius:50%;border:2px solid var(--acc);background:var(--card);color:var(--fg);font:inherit;font-weight:700;touch-action:none}
+#shoot{width:110px;height:110px;border-radius:50%;border:0;background:var(--acc);color:var(--onacc);font:inherit;font-weight:700;font-size:1.1rem;touch-action:none}
+</style></head>
+<body><div id="intro"><div id="il"></div><div id="ib">⚽</div><p id="is">Kattints a kihagyáshoz</p></div><div class="wrap">
+
+<div id="menu">
+  <h1>Troll Foci Aréna</h1>
+  <p>Válassz csapatot és nehézséget, aztán győzd le a botot!</p>
+  <h2>Játékmód</h2><div class="grid" id="gmode"></div>
+  <h2>A te csapatod</h2><div class="grid" id="gm"></div>
+  <h2>Ellenfél (bot)</h2><div class="grid" id="go"></div>
+  <h2>Nehézség</h2><div class="grid" id="gd"></div>
+  <button class="btn" id="go-btn">Mérkőzés indul</button>
+  <p class="help">Irányítás: nyilak a mozgáshoz, Szóköz a játékosváltáshoz, bal egérgomb vagy X a lövéshez (arra, amerre nézel), jobb egérgomb vagy C a passzhoz, Shift a sprinthez. Döntetlen esetén tizenegyesek jönnek, vagy válaszd a Tizenegyesek módot! Telefonon joystick és három gomb.</p>
+</div>
+
+<div id="game" class="hide">
+  <div id="hud"><span id="hn0"></span><b id="sc">0 : 0</b><span id="hn1"></span><em id="tm">2:00</em></div>
+  <div class="stage">
+    <canvas id="c" width="1100" height="660"></canvas>
+    <div id="end" class="hide">
+      <h1 id="et"></h1><p id="es" style="font-size:1.1rem;text-shadow:0 2px 8px #000"></p>
+      <div><button class="btn" id="again">Visszavágó</button><button class="btn alt" id="tomenu">Csapatválasztás</button></div>
+    </div>
+  </div>
+  <div id="touch" class="hide"><div id="pad"><div id="knob"></div></div><button id="sw">VÁLT</button><button id="ps">PASSZ</button><button id="shoot">LÖVÉS</button></div>
+  <p class="help">A sárga nyíl jelöli az irányított játékost. Szóközzel váltasz játékost, bal kattintással vagy X-szel abba az irányba lősz, amerre nézel (a labda közelében). Ha a labda egy csapattársadhoz kerül, az irányítás automatikusan átvált rá. Jobb kattintás: passz a legközelebbi csapattársnak (rá is vált az irányítás). Tizenegyesnél a bal gombot nyomva tartva tölted az erőt (gyenge, közepes, erős), elengedéskor lösz.</p>
+  <button class="btn alt" id="quit" style="margin:8px 0 0">Vissza a menübe</button>
+</div>
+
+</div>
+<script>
+const $=s=>document.querySelector(s);
+const cv=$('#c'),ctx=cv.getContext('2d');
+const W=1100,H=660,M=34,BR=7,PR=12,TAU=Math.PI*2;
+let GH=160;
+const TEAMS=[
+ {n:'Magyarország',c:'#c8102e',s:'#ffffff'},
+ {n:'Brazília',c:'#f7d117',s:'#0a7d3b'},
+ {n:'Argentína',c:'#74acdf',s:'#ffffff'},
+ {n:'Franciaország',c:'#1d3a8a',s:'#ffffff'},
+ {n:'Németország',c:'#f2f2f2',s:'#111111'},
+ {n:'Spanyolország',c:'#d62828',s:'#f7d117'},
+ {n:'Anglia',c:'#ffffff',s:'#1d2a6b'},
+ {n:'Portugália',c:'#8a1c2b',s:'#1f8a4c'},
+ {n:'Olaszország',c:'#1b5fc4',s:'#ffffff'},
+ {n:'Hollandia',c:'#f47b20',s:'#1d2a6b'},
+ {n:'Svédország',c:'#fecb00',s:'#006aa7'},
+ {n:'Japán',c:'#2459b8',s:'#e8132b'},
+ {n:'Mexikó',c:'#0b7a3e',s:'#e8132b'},
+ {n:'Marokkó',c:'#b3202a',s:'#006233'},
+ {n:'Belgium',c:'#111111',s:'#f7d117'},
+ {n:'Horvátország',c:'#d8232a',s:'#2b4ea2'}
+];
+const DIFFS=['Könnyű','Normál','Nehéz'];
+const SPD=[.68,.85,1], SHT=[.4,.7,1.1], SHP=[6.2,7.2,8.2];
+const sel={me:0,op:1,d:1,m:0},MODES=['Mérkőzés','Tizenegyesek'];
+const keys={};let joy={x:0,y:0},shootT=0,switchT=0,passT=0,chg=0,chgOn=false,relT=0,G=null,raf=0,acc=0,last=0;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+
+/* ---------- menü ---------- */
+function chips(id,key,list){
+  const el=$(id);el.innerHTML='';
+  list.forEach((t,i)=>{
+    const b=document.createElement('button');
+    b.className='chip'+(sel[key]===i?' on':'');
+    b.innerHTML=(t.c?'<i style="background:'+t.c+';border-color:'+t.s+'"></i>':'')+(t.n||t);
+    b.onclick=()=>{
+      sel[key]=i;
+      if(key==='me'&&sel.op===i)sel.op=(i+1)%TEAMS.length;
+      if(key==='op'&&sel.me===i)sel.me=(i+1)%TEAMS.length;
+      build();
+    };
+    el.appendChild(b);
+  });
+}
+function build(){chips('#gmode','m',MODES);chips('#gm','me',TEAMS);chips('#go','op',TEAMS);chips('#gd','d',DIFFS);$('#go-btn').textContent=sel.m?'Tizenegyesek indul':'Mérkőzés indul'}
+build();
+
+/* ---------- nyitó animáció ---------- */
+(function(){
+  const il=$('#il');let n=0;
+  'Troll Foci Aréna'.split(' ').forEach(w=>{
+    const d=document.createElement('div');d.style.display='flex';
+    [...w].forEach(ch=>{const s=document.createElement('span');s.textContent=ch;s.style.animationDelay=(n++*.07)+'s';d.appendChild(s)});
+    il.appendChild(d);
+  });
+  const intro=$('#intro'),hide=()=>{intro.classList.add('out');setTimeout(()=>intro.remove(),700)};
+  intro.onclick=hide;setTimeout(hide,3800);addEventListener('keydown',hide,{once:true});
+})();
+
+/* ---------- irányítás ---------- */
+addEventListener('keydown',e=>{
+  keys[e.code]=1;
+  if(e.code==='Space'&&!e.repeat)switchT=1;
+  if((e.code==='KeyX'||e.code==='KeyZ'||e.code==='Enter')&&!e.repeat){shootT=8;chgOn=true;chg=0}
+  if(e.code==='KeyC'&&!e.repeat)passT=8;
+  if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)&&G)e.preventDefault();
+});
+addEventListener('keyup',e=>{keys[e.code]=0;if(chgOn&&(e.code==='KeyX'||e.code==='KeyZ'||e.code==='Enter')){chgOn=false;relT=8}});
+const pad=$('#pad'),knob=$('#knob');
+function pm(e){
+  const r=pad.getBoundingClientRect(),R=r.width/2;
+  let x=(e.clientX-r.left-R)/R,y=(e.clientY-r.top-R)/R;const l=Math.hypot(x,y);
+  if(l>1){x/=l;y/=l}
+  joy={x,y};knob.style.transform='translate('+x*R*.6+'px,'+y*R*.6+'px)';
+}
+pad.onpointerdown=e=>{pad.setPointerCapture(e.pointerId);pm(e)};
+pad.onpointermove=e=>{if(pad.hasPointerCapture(e.pointerId))pm(e)};
+pad.onpointerup=pad.onpointercancel=()=>{joy={x:0,y:0};knob.style.transform=''};
+$('#shoot').onpointerdown=e=>{e.preventDefault();shootT=8;chgOn=true;chg=0};
+$('#shoot').onpointerup=$('#shoot').onpointercancel=()=>{if(chgOn){chgOn=false;relT=8}};
+$('#sw').onpointerdown=e=>{e.preventDefault();switchT=1};
+$('#ps').onpointerdown=e=>{e.preventDefault();passT=8};
+cv.addEventListener('mousedown',e=>{if(!G)return;e.preventDefault();if(e.button===0){shootT=8;chgOn=true;chg=0}else if(e.button===2)passT=8});
+addEventListener('mouseup',e=>{if(e.button===0&&chgOn){chgOn=false;relT=8}});
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+if(matchMedia('(pointer:coarse)').matches)$('#touch').classList.remove('hide');
+
+/* ---------- játék ---------- */
+function mk(t,k,hx,hy){
+  const x=t?W-hx:hx;
+  return{t,k,hx:x,hy,x,y:hy,vx:0,vy:0,fx:t?-1:1,fy:0,cd:0,sy:0};
+}
+function kickoff(){
+  const hs=[[M+22,H/2],[300,H/2-130],[300,H/2+130],[520,H/2-100],[520,H/2+100]];
+  G.pl=[];
+  for(let t=0;t<2;t++)hs.forEach((h,i)=>G.pl.push(mk(t,i===0,h[0],h[1])));
+  G.ball={x:W/2,y:H/2,vx:0,vy:0};G.act=null;G.ch1=null;G.own=null;G.sw=0;
+}
+function teamName(t){return TEAMS[t?sel.op:sel.me]}
+function sw(T){return '<i style="width:18px;height:18px;border-radius:50%;border:3px solid '+T.s+';background:'+T.c+';display:inline-block;box-sizing:border-box"></i>'}
+function startMatch(){
+  GH=160;
+  G={score:[0,0],t:120,f:0,pause:0,over:false,who:0,act:null};
+  kickoff();
+  $('#menu').classList.add('hide');$('#game').classList.remove('hide');$('#end').classList.add('hide');
+  $('#hn0').innerHTML=sw(teamName(0))+teamName(0).n;
+  $('#hn1').innerHTML=teamName(1).n+sw(teamName(1));
+  $('#hn1').style.justifyContent='flex-end';
+  if(document.activeElement)document.activeElement.blur();
+  if(sel.m===1){G.t=0;startPen()}
+  cancelAnimationFrame(raf);acc=0;last=performance.now();raf=requestAnimationFrame(loop);
+}
+function toMenu(){G=null;cancelAnimationFrame(raf);$('#game').classList.add('hide');$('#menu').classList.remove('hide')}
+$('#go-btn').onclick=startMatch;$('#again').onclick=startMatch;
+$('#tomenu').onclick=toMenu;$('#quit').onclick=toMenu;
+
+function toward(p,tx,ty){
+  const dx=tx-p.x,dy=ty-p.y,d=Math.hypot(dx,dy);
+  if(d<3)return[0,0];
+  const k=Math.min(1,d/6);return[dx/d*k,dy/d*k];
+}
+function goal(t){
+  G.score[t]++;G.pause=150;G.who=t;
+  const T=teamName(t),cols=[T.c,T.s,'#ffd23f','#ffffff'],gx=t?M:W-M,pa=[];
+  for(let i=0;i<150;i++){
+    const bu=i<60,a=bu?(Math.random()-.5)*2.2:0,sp=bu?4+Math.random()*9:0;
+    pa.push({x:bu?gx:Math.random()*W,y:bu?H/2:-Math.random()*400,
+      vx:bu?(t?1:-1)*Math.cos(a)*sp:(Math.random()-.5)*2,vy:bu?Math.sin(a)*sp-3:Math.random()*2+1,
+      r:Math.random()*6,vr:(Math.random()-.5)*.4,w:6+Math.random()*8,h:4+Math.random()*6,c:cols[i%4]});
+  }
+  G.parts=pa;
+}
+function showEnd(){
+  G.ended=true;
+  const a=G.score[0],b=G.score[1];
+  $('#et').textContent=G.win===0?'Győzelem!':'Vereség';
+  $('#es').textContent=sel.m===1?teamName(0).n+' '+G.pg[0]+' : '+G.pg[1]+' '+teamName(1).n+' (tizenegyesek)':teamName(0).n+' '+a+' : '+b+' '+teamName(1).n+(G.pg?' (11-esek: '+G.pg[0]+' : '+G.pg[1]+')':'');
+  $('#end').classList.remove('hide');
+}
+function moveBall(){
+  const b=G.ball;
+  b.x+=b.vx;b.y+=b.vy;b.vx*=.98;b.vy*=.98;
+  if(Math.hypot(b.vx,b.vy)<.04)b.vx=b.vy=0;
+  if(G.pause>0){
+    if(b.x<M-15){b.x=M-15;b.vx=Math.abs(b.vx)*.3}
+    if(b.x>W-M+15){b.x=W-M+15;b.vx=-Math.abs(b.vx)*.3}
+    b.y=clamp(b.y,H/2-GH/2+BR,H/2+GH/2-BR);return;
+  }
+  const inG=Math.abs(b.y-H/2)<GH/2-3;
+  if(b.y<M+BR){b.y=M+BR;b.vy=Math.abs(b.vy)*.8}
+  if(b.y>H-M-BR){b.y=H-M-BR;b.vy=-Math.abs(b.vy)*.8}
+  if(b.x<M&&inG)return goal(1);
+  if(b.x>W-M&&inG)return goal(0);
+  if(b.x<M+BR&&!inG){b.x=M+BR;b.vx=Math.abs(b.vx)*.8}
+  if(b.x>W-M-BR&&!inG){b.x=W-M-BR;b.vx=-Math.abs(b.vx)*.8}
+}
+
+function step(){
+  if(G.over)return;
+  if(G.mode==='pen')return stepPen();
+  if(G.mode==='trophy')return stepTrophy();
+  const b=G.ball;
+  if(G.pause>0){for(const q of G.parts){q.x+=q.vx;q.y+=q.vy;q.vy+=.12;q.vx*=.99;q.r+=q.vr}moveBall();if(--G.pause===0)kickoff();return}
+  if(++G.f%60===0&&--G.t<=0){timeUp();return}
+  const out=G.pl.filter(p=>!p.k);
+  const near=t=>out.filter(p=>p.t===t).sort((a,c)=>dist(a,b)-dist(c,b))[0];
+  if(G.sw>0)G.sw--;if(passT>0)passT--;
+  const mine=out.filter(p=>p.t===0);
+  if(!G.act)G.act=near(0);
+  else if(switchT)G.act=mine[(mine.indexOf(G.act)+1)%mine.length];
+  switchT=0;
+  const act=G.act,n1=near(1);
+  if(!G.ch1||dist(n1,b)<dist(G.ch1,b)-30)G.ch1=n1;
+  const ch1=G.ch1;
+  const sp=SPD[sel.d];
+  for(const p of G.pl){
+    p.pw=0;let mx=0,my=0,s=2.5,sh=0,ax=p.fx,ay=p.fy;
+    if(p===act){
+      let ix=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+joy.x;
+      let iy=(keys.KeyS||keys.ArrowDown?1:0)-(keys.KeyW||keys.ArrowUp?1:0)+joy.y;
+      const l=Math.hypot(ix,iy);
+      if(l>.2){p.fx=ix/l;p.fy=iy/l}
+      if(l>1){ix/=l;iy/=l}
+      mx=ix;my=iy;s=(keys.ShiftLeft||keys.ShiftRight)?3.8:3.0;
+      if(shootT>0){sh=1;ax=p.fx;ay=p.fy}
+      if(passT>0&&p.cd===0&&dist(p,b)<PR+BR+10)doPass(p);
+    }else if(p.k){
+      const nr=Math.abs(b.x-p.hx)<120&&Math.abs(b.y-H/2)<115;
+      const tx=nr?b.x:p.hx,ty=nr?b.y:clamp(b.y,H/2-GH/2+10,H/2+GH/2-10);
+      [mx,my]=toward(p,tx,ty);s=2.3*(p.t?sp:1);
+    }else{
+      const gx=p.t?M:W-M,gy=H/2+p.sy;
+      let tx,ty;
+      if(p===ch1||(p.t===0&&dist(p,b)<40&&p!==act)){
+        const d=dist(p,b);
+        const ux=gx-b.x,uy=gy-b.y,ul=Math.hypot(ux,uy)||1,qx=ux/ul,qy=uy/ul,rx=b.x-p.x,ry=b.y-p.y;
+        const behind=rx*qx+ry*qy>0&&Math.abs(rx*qy-ry*qx)<26;
+        if(d>40&&!behind){tx=b.x-qx*26;ty=b.y-qy*26}
+        else{tx=b.x+qx*30;ty=b.y+qy*30}
+        const inR=d<PR+BR+7,dg=Math.hypot(gx-p.x,gy-p.y);
+        p.hold=inR&&Math.hypot(b.vx,b.vy)<2.5?(p.hold||0)+1:0;
+        if(inR&&p.cd===0){
+          if(dg<380&&Math.random()<.2*SHT[sel.d]){sh=1;ax=gx-p.x;ay=gy-p.y+(Math.random()-.5)*[150,90,40][sel.d]}
+          else if(p.hold>30){sh=1;p.pw=6;ax=gx-p.x;ay=gy-p.y}
+        }
+      }else{tx=p.hx+(b.x-W/2)*.28;ty=p.hy+(b.y-H/2)*.3}
+      [mx,my]=toward(p,tx,ty);s=2.8*(p.t?sp:1);
+    }
+    p.vx+=(mx*s-p.vx)*.2;p.vy+=(my*s-p.vy)*.2;
+    if(p!==act&&Math.abs(mx)+Math.abs(my)>.1){p.fx=mx;p.fy=my}
+    p.x=clamp(p.x+p.vx,M+PR,W-M-PR);p.y=clamp(p.y+p.vy,M+PR,H-M-PR);
+    if(p.k)p.x=p.t?clamp(p.x,W-M-120,W-M-PR):clamp(p.x,M+PR,M+120);
+    if(p.cd>0)p.cd--;
+    if(sh&&p.cd===0&&dist(p,b)<PR+BR+10){
+      const l=Math.hypot(ax,ay)||1,pw=p.pw||(p===act?9:SHP[sel.d]);
+      b.vx=ax/l*pw+p.vx*.3;b.vy=ay/l*pw+p.vy*.3;p.cd=20;
+      p.sy=(Math.random()-.5)*(GH-36);
+    }
+  }
+  if(shootT>0)shootT--;
+  for(const p of G.pl){
+    const dx=b.x-p.x,dy=b.y-p.y,d=Math.hypot(dx,dy)||.01,m=BR+(p.k?1/Math.sqrt(Math.pow(dx/d/17,2)+Math.pow(dy/d/27,2)):PR);
+    if(d<m+(p.k?0:5)){
+      const nx=dx/d,ny=dy/d;const dd=Math.max(d,m);b.x=p.x+nx*dd;b.y=p.y+ny*dd;
+      if(p.t===0&&!p.k&&p!==G.act&&G.sw<=0&&dist(G.act,b)>PR+BR+12){G.act=p;G.sw=25}
+      if(p.cd===0){
+        if(p.k){const a=(Math.random()-.5)*1.1;b.vx=(p.t?-1:1)*Math.cos(a)*6.8;b.vy=Math.sin(a)*6.8;p.cd=40}
+        else if(Math.hypot(b.vx-p.vx,b.vy-p.vy)<6.5){
+          const ow=G.own;
+          if(!ow||ow===p||ow.cd>0||dist(ow,b)>m+9||Math.random()<.04)G.own=p;
+          if(G.own===p){const fx=p.x+p.fx*m,fy=p.y+p.fy*m;b.vx=p.vx+(fx-b.x)*.4;b.vy=p.vy+(fy-b.y)*.4}
+        }else{b.vx=p.vx*.5+nx;b.vy=p.vy*.5+ny}
+      }
+    }
+  }
+  for(let i=0;i<G.pl.length;i++)for(let j=i+1;j<G.pl.length;j++){
+    const a=G.pl[i],c=G.pl[j],dx=c.x-a.x,dy=c.y-a.y,d=Math.hypot(dx,dy)||.01;
+    const R2=PR+(a.k||c.k?20:PR);if(d<R2){const o=(R2-d)/2,nx=dx/d,ny=dy/d;a.x-=nx*o;a.y-=ny*o;c.x+=nx*o;c.y+=ny*o}
+  }
+  moveBall();
+}
+
+/* ---------- rajzolás ---------- */
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  if(G.mode==='trophy'){cv.style.transform='';drawTrophy();return}
+  if(G.mode==='pen'){ctx.save();ctx.scale(2,2);ctx.translate(-G.pen.x0,-(H/2-165))}
+  cv.style.transform=G.pause>128?'translate('+(Math.random()-.5)*10+'px,'+(Math.random()-.5)*10+'px)':'';
+  for(let i=0;i<14;i++){ctx.fillStyle=i%2?'#2f9a4f':'#35a757';ctx.fillRect(i*W/14,0,W/14+1,H)}
+  ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=2;
+  ctx.strokeRect(M,M,W-2*M,H-2*M);
+  ctx.beginPath();ctx.moveTo(W/2,M);ctx.lineTo(W/2,H-M);ctx.stroke();
+  ctx.beginPath();ctx.arc(W/2,H/2,75,0,TAU);ctx.stroke();
+  ctx.strokeRect(M,H/2-120,120,240);ctx.strokeRect(W-M-120,H/2-120,120,240);
+  ctx.fillStyle='rgba(255,255,255,.2)';
+  for(const x of[M-22,W-M]){ctx.fillRect(x,H/2-GH/2,22,GH);ctx.strokeRect(x,H/2-GH/2,22,GH)}
+  for(const p of G.pl){
+    const T=teamName(p.t);
+    ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.ellipse(p.x,p.y+(p.k?16:9),p.k?18:12,5,0,0,TAU);ctx.fill();
+    ctx.fillStyle=p.k?'#222':T.c;ctx.strokeStyle=p.k?T.c:T.s;ctx.lineWidth=3.5;
+    ctx.beginPath();if(p.k)ctx.ellipse(p.x,p.y,17,27,0,0,TAU);else ctx.arc(p.x,p.y,PR,0,TAU);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#111';ctx.beginPath();ctx.arc(p.x+p.fx*6,p.y+p.fy*6,3,0,TAU);ctx.fill();
+    if(p.k){ctx.fillStyle='#b8f13a';for(const s of[-1,1]){ctx.beginPath();ctx.arc(p.x,p.y+s*26,6,0,TAU);ctx.fill()}}
+    if(p===G.act){
+      ctx.fillStyle='#ffe14a';ctx.strokeStyle='#000';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(p.x,p.y-17);ctx.lineTo(p.x-7,p.y-28);ctx.lineTo(p.x+7,p.y-28);ctx.closePath();ctx.fill();ctx.stroke();
+    }
+  }
+  const b=G.ball;
+  ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.ellipse(b.x,b.y+5,BR,3,0,0,TAU);ctx.fill();
+  ctx.fillStyle='#fff';ctx.strokeStyle='#111';ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(b.x,b.y,BR,0,TAU);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#111';ctx.beginPath();ctx.arc(b.x,b.y,2.5,0,TAU);ctx.fill();
+  if(G.mode==='pen')penDraw();
+  if(G.pause>0){
+    goalFx();
+    
+    
+  }
+  $('#sc').textContent=G.mode==='pen'?G.pg[0]+' : '+G.pg[1]:G.score[0]+' : '+G.score[1];
+  $('#tm').textContent=G.mode==='pen'?'11-es':Math.floor(G.t/60)+':'+String(G.t%60).padStart(2,'0');
+}
+function goalFx(){
+  const k=150-G.pause,T=teamName(G.who),fade=G.pause<20?G.pause/20:1;
+  const lum=h=>{const n=parseInt(h.slice(1),16);return(n>>16)*.3+((n>>8)&255)*.59+(n&255)*.11};
+  const ol=lum(T.c)<190?T.c:T.s;
+  ctx.save();ctx.globalAlpha=fade;
+  if(k<14){ctx.fillStyle='rgba(255,255,255,'+.8*(1-k/14)+')';ctx.fillRect(0,0,W,H)}
+  const e=Math.min(1,k/16),w=W*(1-Math.pow(1-e,3));
+  ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(0,H/2-100,w,200);
+  ctx.fillStyle=T.c;ctx.fillRect(0,H/2-100,w,10);ctx.fillRect(0,H/2+90,w,10);
+  ctx.fillStyle=T.s;ctx.fillRect(0,H/2-90,w,4);ctx.fillRect(0,H/2+86,w,4);
+  for(const q of G.parts){ctx.save();ctx.translate(q.x,q.y);ctx.rotate(q.r);ctx.fillStyle=q.c;ctx.fillRect(-q.w/2,-q.h/2,q.w,q.h);ctx.restore()}
+  const txt='GÓÓÓL!';ctx.font='900 120px "Trebuchet MS",sans-serif';ctx.textAlign='center';ctx.lineJoin='round';
+  const ws=[...txt].map(c=>ctx.measureText(c).width);let x=W/2-ws.reduce((a,c)=>a+c,0)/2;
+  [...txt].forEach((c,i)=>{
+    const a=clamp((k-8-i*4)/14,0,1),s=a*(1+.4*Math.sin(a*Math.PI)),y=H/2+38-(a>=1?Math.sin(k/5+i)*7:0);
+    ctx.save();ctx.translate(x+ws[i]/2,y);ctx.scale(s,s);
+    ctx.lineWidth=14;ctx.strokeStyle=ol;ctx.strokeText(c,0,0);ctx.fillStyle='#fff';ctx.fillText(c,0,0);ctx.restore();x+=ws[i];
+  });
+  ctx.globalAlpha=fade*clamp((k-34)/14,0,1);ctx.font='bold 30px "Trebuchet MS",sans-serif';ctx.fillStyle='#fff';
+  ctx.fillText('Gólt szerzett: '+T.n,W/2,H/2+80);
+  ctx.restore();
+}
+const FN='"Trebuchet MS",sans-serif';
+function timeUp(){G.score[0]===G.score[1]?startPen():startTrophy(G.score[0]>G.score[1]?0:1)}
+
+/* ---------- tizenegyesek ---------- */
+function startPen(){GH=220;G.mode='pen';G.pg=[0,0];G.pk=[0,0];G.hist=[[],[]];G.act=null;G.parts=[];G.pause=0;nextKick()}
+function nextKick(){
+  const t=G.pk[0]===G.pk[1]?0:1,dir=t?-1:1,gx=t?M:W-M,sx=gx-dir*150;
+  const side=Math.random()<.5?-1:1,miss=Math.random()<[.4,.25,.15][sel.d];
+  G.pen={t,dir,gx,sx,ph:'aim',f:0,ry:H/2,x0:dir>0?W-550:0,r:'',bf:55+Math.random()*40,
+    bt:H/2+side*(miss?GH/2+8+Math.random()*20:[.35,.55,.7][sel.d]*GH/2+Math.random()*GH*.09)};
+  G.pl.forEach((p,i)=>{
+    const tm=i<5?0:1,k=i%5;p.vx=p.vy=0;p.cd=0;p.fx=dir;p.fy=0;
+    if(k===0){p.y=H/2;if(tm===t)p.x=tm?W-M-22:M+22;else{p.x=gx-dir*14;p.fx=-dir}}
+    else if(k===1&&tm===t){p.x=sx-dir*34;p.y=H/2}
+    else{p.x=gx-dir*250;p.y=H/2+(tm*4+k-4.5)*42}
+  });
+  G.ball={x:sx,y:H/2,vx:0,vy:0};
+}
+function fire(ty,lv){
+  const pn=G.pen,b=G.ball,sh=G.pl[pn.t*5+1],v=pn.t===0?[8,11,14.5][lv||0]:[9,10,11.5][sel.d];
+  if(pn.t===0&&lv===2)ty+=(Math.random()-.5)*22;
+  const dx=pn.gx-b.x,dy=ty-b.y,l=Math.hypot(dx,dy);
+  b.vx=dx/l*v;b.vy=dy/l*v;pn.ph='shot';pn.f=0;sh.x=pn.sx-pn.dir*16;
+  if(pn.t===0){const c=Math.random()<[.25,.38,.5][sel.d];pn.kt=H/2+(c?clamp(ty-H/2,-70,70):(Math.random()<.5?-1:1)*55);pn.kd=[13,10,7][sel.d]}
+}
+function penRes(r){
+  const pn=G.pen;pn.ph='res';pn.f=0;pn.r=r;
+  G.pk[pn.t]++;G.hist[pn.t].push(r==='goal');
+  if(r==='goal'){G.pg[pn.t]++;goal(pn.t);G.score[pn.t]--}
+}
+function penNext(){
+  const a=G.pg[0],c=G.pg[1],x=G.pk[0],y=G.pk[1];let w=-1;
+  if(x<5||y<5){if(a+(5-x)<c)w=1;else if(c+(5-y)<a)w=0}
+  else if(x===y&&a!==c)w=a>c?0:1;
+  if(w<0)nextKick();else startTrophy(w);
+}
+function stepPen(){
+  const pn=G.pen,b=G.ball,d=pn.dir,sh=G.pl[pn.t*5+1],kp=G.pl[(1-pn.t)*5];
+  const iy=clamp((keys.KeyS||keys.ArrowDown?1:0)-(keys.KeyW||keys.ArrowUp?1:0)+joy.y,-1,1),lim=GH/2+25;
+  pn.f++;if(relT>0&&(pn.ph!=='aim'||pn.t!==0))relT=0;
+  if(pn.ph!=='res'&&pn.t===1)kp.y=clamp(kp.y+iy*6,H/2-GH/2+14,H/2+GH/2-14);
+  if(pn.ph==='aim'){
+    if(pn.t===0){
+      pn.ry=clamp(pn.ry+iy*2.6,H/2-lim,H/2+lim);pn.dy=pn.ry+Math.sin(pn.f*.25)*9;
+      if(chgOn)chg++;
+      if(relT>0){if(pn.f>15)fire(pn.dy,chg<18?0:chg<45?1:2);chg=0;relT=0}
+      else if(switchT&&pn.f>15)fire(pn.dy,1);
+    }else{
+      sh.x=pn.sx-d*(16+Math.max(0,1-pn.f/pn.bf)*50);
+      if(pn.f>=pn.bf)fire(pn.bt);
+    }
+  }else if(pn.ph==='shot'){
+    b.x+=b.vx;b.y+=b.vy;
+    if(pn.t===0&&pn.f>pn.kd)kp.y+=clamp(pn.kt-kp.y,-6,6);
+    if(Math.pow((b.x-kp.x)/(17+BR+4),2)+Math.pow((b.y-kp.y)/(27+BR+4),2)<1){b.vx=-d*3;b.vy=(Math.random()-.5)*6;penRes('save')}
+    else if((b.x-pn.gx)*d>=0)penRes(Math.abs(b.y-H/2)<GH/2-3?'goal':'miss');
+  }else{
+    const g=pn.r==='goal';
+    b.x+=b.vx;b.y+=b.vy;b.vx*=.95;b.vy*=.95;
+    if(g){b.x=clamp(b.x,M-15,W-M+15);b.y=clamp(b.y,H/2-GH/2+BR,H/2+GH/2-BR);for(const q of G.parts){q.x+=q.vx;q.y+=q.vy;q.vy+=.12;q.vx*=.99;q.r+=q.vr}}
+    if(G.pause>0)G.pause--;
+    if(pn.f>=(g?95:75)){G.pause=0;penNext()}
+  }
+  if(shootT>0)shootT--;
+  switchT=0;
+}
+function penDraw(){
+  const pn=G.pen;
+  if(pn.ph==='aim'&&pn.t===0){const y=pn.dy||pn.ry;ctx.strokeStyle='#ffe14a';ctx.lineWidth=3;ctx.beginPath();ctx.arc(pn.gx,y,13,0,TAU);ctx.moveTo(pn.gx-20,y);ctx.lineTo(pn.gx+20,y);ctx.moveTo(pn.gx,y-20);ctx.lineTo(pn.gx,y+20);ctx.stroke()}
+  ctx.restore();
+  ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(W/2-190,10,380,72);ctx.font='bold 17px '+FN;
+  for(let k=0;k<2;k++){
+    const h=G.hist[k],y=34+k*28;
+    ctx.fillStyle='#fff';ctx.textAlign='right';ctx.fillText(teamName(k).n,W/2-70,y+5);
+    for(let i=0;i<Math.max(5,h.length);i++){ctx.fillStyle=i<h.length?(h[i]?'#3fcf7a':'#ff5a5a'):'rgba(255,255,255,.3)';ctx.beginPath();ctx.arc(W/2-50+i*22,y,8,0,TAU);ctx.fill()}
+  }
+  ctx.textAlign='center';ctx.lineJoin='round';
+  if(pn.ph==='aim'&&pn.t===0){
+    const c=chgOn?chg:0,fr=c<18?c/18/3:c<45?1/3+(c-18)/27/3:2/3+Math.min(1,(c-45)/20)/3,lv=c<18?0:c<45?1:2,bx=W/2-180,by=H-112;
+    ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(bx-6,by-6,372,38);
+    ctx.fillStyle=['#2e9e4f','#d99a00','#d63a3a'][lv];ctx.fillRect(bx,by,360*fr,26);
+    ctx.strokeStyle='#fff';ctx.lineWidth=2;for(let i=0;i<3;i++)ctx.strokeRect(bx+i*120,by,120,26);
+    ctx.fillStyle='#fff';ctx.font='bold 15px '+FN;['GYENGE','KÖZEPES','ERŐS'].forEach((s,i)=>ctx.fillText(s,bx+60+i*120,by+19));
+  }
+  if(pn.ph==='res'&&pn.r!=='goal'){
+    const tx=pn.r==='save'?'KIVÉDTÉK!':'KIMARADT!';ctx.font='900 84px '+FN;ctx.lineWidth=12;ctx.strokeStyle='#111';ctx.fillStyle='#fff';ctx.strokeText(tx,W/2,H/2+20);ctx.fillText(tx,W/2,H/2+20);
+  }else if(pn.ph==='aim'||(pn.ph==='shot'&&pn.t===1)){
+    const m=pn.t===0?'Nyilak: célzás. Bal klikk / X nyomva tartva töltőd az erő, elengedésre lösz':'Az ellenfél lő, védj a nyilakkal!';
+    ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(W/2-390,H-56,780,40);ctx.fillStyle='#fff';ctx.font='bold 20px '+FN;ctx.fillText(m,W/2,H-29);
+  }
+  if(G.pk[0]+G.pk[1]===0&&pn.ph==='aim'&&pn.f<90){
+    ctx.globalAlpha=Math.min(1,(90-pn.f)/30);ctx.font='900 80px '+FN;ctx.lineWidth=12;ctx.strokeStyle='#111';ctx.fillStyle='#ffd23f';
+    ctx.strokeText('TIZENEGYESEK!',W/2,H/2-10);ctx.fillText('TIZENEGYESEK!',W/2,H/2-10);
+    ctx.font='bold 28px '+FN;ctx.fillStyle='#fff';ctx.fillText(sel.m===1?'Büntetőpárbaj: 5 rúgás csapatonként':'Döntetlen volt, jön a büntetőpárbaj',W/2,H/2+34);ctx.globalAlpha=1;
+  }
+}
+
+/* ---------- trófea ---------- */
+function startTrophy(w){
+  G.mode='trophy';G.win=w;G.tf=0;G.pause=0;G.act=null;
+  const T=teamName(w),cols=[T.c,T.s,'#ffd23f','#ffffff'];
+  G.parts=Array.from({length:220},(_,i)=>({x:Math.random()*W,y:-Math.random()*H,vx:(Math.random()-.5)*1.5,vy:1+Math.random()*2.5,r:Math.random()*6,vr:(Math.random()-.5)*.3,w:6+Math.random()*8,h:4+Math.random()*6,c:cols[i%4]}));
+}
+function stepTrophy(){
+  G.tf++;
+  for(const q of G.parts){q.x+=q.vx;q.y+=q.vy;q.r+=q.vr;if(q.y>H+20){q.y=-20;q.x=Math.random()*W}}
+  if(G.tf===230)showEnd();
+}
+function cup(x,yb){
+  ctx.save();ctx.translate(x,yb);ctx.scale(1.15,1.15);
+  const g=ctx.createLinearGradient(-44,0,44,0);g.addColorStop(0,'#b07a00');g.addColorStop(.45,'#ffe27a');g.addColorStop(1,'#c58a00');
+  ctx.fillStyle=g;ctx.strokeStyle=g;ctx.lineWidth=7;
+  ctx.fillRect(-34,-16,68,16);ctx.fillRect(-12,-48,24,34);
+  ctx.beginPath();ctx.moveTo(-42,-118);ctx.lineTo(42,-118);ctx.quadraticCurveTo(40,-58,0,-50);ctx.quadraticCurveTo(-40,-58,-42,-118);ctx.fill();
+  ctx.beginPath();ctx.arc(-44,-96,16,Math.PI*.5,Math.PI*1.5);ctx.stroke();
+  ctx.beginPath();ctx.arc(44,-96,16,-Math.PI*.5,Math.PI*.5);ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,.5)';ctx.fillRect(-26,-112,8,40);
+  ctx.restore();
+}
+function drawTrophy(){
+  const k=G.tf,T=teamName(G.win),cx=W/2,y0=H-80,x=Math.min(1,k/60);
+  const e=1+2.70158*Math.pow(x-1,3)+1.70158*Math.pow(x-1,2),ra=clamp((k-40)/30,0,1);
+  const hy=450-200*e+(x>=1?Math.sin(k/10)*4:0);
+  ctx.fillStyle='#0b1a12';ctx.fillRect(0,0,W,H);
+  ctx.save();ctx.translate(cx,250);ctx.rotate(k*.008);ctx.fillStyle='rgba(255,210,63,'+.14*ra+')';
+  for(let i=0;i<16;i+=2){ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,1000,i*TAU/16,(i+1)*TAU/16);ctx.closePath();ctx.fill()}
+  ctx.restore();
+  const gr=ctx.createRadialGradient(cx,hy-60,10,cx,hy-60,220);gr.addColorStop(0,'rgba(255,226,122,'+.6*ra+')');gr.addColorStop(1,'rgba(255,226,122,0)');
+  ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='rgba(0,0,0,.45)';ctx.beginPath();ctx.ellipse(cx,y0+8,120,18,0,0,TAU);ctx.fill();
+  ctx.fillStyle='#f1c9a0';ctx.fillRect(cx-40,y0-80,30,80);ctx.fillRect(cx+10,y0-80,30,80);
+  ctx.fillStyle=T.s;ctx.fillRect(cx-40,y0-40,30,40);ctx.fillRect(cx+10,y0-40,30,40);ctx.fillRect(cx-48,y0-120,96,42);
+  ctx.fillStyle=T.c;ctx.fillRect(cx-48,y0-220,96,100);ctx.fillStyle=T.s;ctx.fillRect(cx-48,y0-180,96,10);
+  ctx.lineCap='round';ctx.lineWidth=26;ctx.strokeStyle=T.c;
+  for(const s of[-1,1]){ctx.beginPath();ctx.moveTo(cx+s*52,y0-205);ctx.lineTo(cx+s*(34-6*e),hy);ctx.stroke()}
+  ctx.fillStyle='#f1c9a0';
+  for(const s of[-1,1]){ctx.beginPath();ctx.arc(cx+s*(34-6*e),hy,14,0,TAU);ctx.fill()}
+  ctx.beginPath();ctx.arc(cx,y0-254,34,0,TAU);ctx.fill();
+  ctx.fillStyle='#3a2a1a';ctx.beginPath();ctx.arc(cx,y0-254,34,Math.PI,TAU);ctx.fill();
+  ctx.fillStyle='#222';ctx.beginPath();ctx.arc(cx-12,y0-246,4,0,TAU);ctx.fill();ctx.beginPath();ctx.arc(cx+12,y0-246,4,0,TAU);ctx.fill();
+  ctx.strokeStyle='#222';ctx.lineWidth=4;ctx.beginPath();ctx.arc(cx,y0-240,14,.1*Math.PI,.9*Math.PI);ctx.stroke();
+  cup(cx,hy+6);
+  for(const q of G.parts){ctx.save();ctx.translate(q.x,q.y);ctx.rotate(q.r);ctx.fillStyle=q.c;ctx.fillRect(-q.w/2,-q.h/2,q.w,q.h);ctx.restore()}
+  ctx.textAlign='center';ctx.lineJoin='round';ctx.globalAlpha=clamp((k-10)/20,0,1);
+  ctx.font='900 46px '+FN;ctx.lineWidth=9;ctx.strokeStyle='#111';ctx.fillStyle='#ffd23f';
+  ctx.strokeText(T.n+' a győztes!',cx,62);ctx.fillText(T.n+' a győztes!',cx,62);
+  ctx.font='bold 24px '+FN;ctx.fillStyle='#fff';
+  ctx.fillText(G.pg?'Tizenegyesekkel: '+G.pg[0]+' : '+G.pg[1]:'Végeredmény: '+G.score[0]+' : '+G.score[1],cx,102);
+  ctx.globalAlpha=1;
+}
+function doPass(p){
+  const b=G.ball,q=G.pl.filter(o=>o.t===0&&!o.k&&o!==p).sort((u,v)=>dist(u,p)-dist(v,p))[0];
+  if(!q)return;
+  const D=dist(q,b),pw=clamp(3+.02*D,4.5,10),t=clamp(D/(pw*.85),0,40);
+  const dx=q.x+q.vx*t-b.x,dy=q.y+q.vy*t-b.y,l=Math.hypot(dx,dy)||1;
+  b.vx=dx/l*pw;b.vy=dy/l*pw;p.fx=dx/l;p.fy=dy/l;p.cd=20;G.act=q;G.sw=30;G.own=null;passT=0;
+}
+function loop(ts){
+  if(!G)return;
+  acc+=Math.min(ts-last,100);last=ts;
+  while(acc>=16.667){step();acc-=16.667}
+  draw();raf=requestAnimationFrame(loop);
+}
+</script></body></html>
